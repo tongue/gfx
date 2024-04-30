@@ -1,0 +1,84 @@
+export class Vector {
+	constructor(
+		public x: number,
+		public y: number
+	) {
+		this.x = x;
+		this.y = y;
+
+		return this;
+	}
+
+	add(v: Vector) {
+		this.x += v.x;
+		this.y += v.y;
+	}
+	static add(v1: Vector, v2: Vector) {
+		return new Vector(v1.x + v2.x, v1.y + v2.y);
+	}
+
+	multiply(scalar: number) {
+		this.x *= scalar;
+		this.y *= scalar;
+	}
+	static multiply(v: Vector, scalar: number) {
+		return new Vector(v.x * scalar, v.y * scalar);
+	}
+
+	subtract(v: Vector) {
+		this.x -= v.x;
+		this.y -= v.y;
+	}
+	static subtract(v1: Vector, v2: Vector) {
+		return new Vector(v1.x - v2.x, v1.y - v2.y);
+	}
+
+	divide(scalar: number) {
+		this.x /= scalar;
+		this.y /= scalar;
+	}
+	static divide(v: Vector, scalar: number) {
+		return new Vector(v.x / scalar, v.y / scalar);
+	}
+
+	setMagnitude(magnitude: number) {
+		this.normalize();
+		this.multiply(magnitude);
+	}
+
+	get magnitude() {
+		return Math.sqrt(this.x * this.x + this.y * this.y);
+	}
+	static magnitude(v: Vector) {
+		return Math.sqrt(v.x * v.x + v.y * v.y);
+	}
+
+	get magnitudeSquared() {
+		return this.x * this.x + this.y * this.y;
+	}
+	static magnitudeSquared(v: Vector) {
+		return v.x * v.x + v.y * v.y;
+	}
+
+	rotate(angle: number) {
+		const { x, y } = this;
+		this.x = x * Math.cos(angle) - y * Math.sin(angle);
+		this.y = x * Math.sin(angle) + y * Math.cos(angle);
+	}
+
+	normalize() {
+		this.divide(this.magnitude);
+	}
+	static normalize(v: Vector) {
+		return Vector.divide(v, Vector.magnitude(v));
+	}
+
+	static random(): Vector {
+		const random = new Vector(Math.random(), Math.random());
+		return random;
+	}
+
+	clone() {
+		return new Vector(this.x, this.y);
+	}
+}
