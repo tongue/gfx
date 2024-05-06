@@ -1,19 +1,21 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { MultiBodyGravitation, type MultiBodyGravitationOptions } from './gravitation';
 
-	let saved_options: [string, MultiBodyGravitationOptions][] = [];
+	let saved_options: { [key: string]: MultiBodyGravitationOptions } = $state({});
+	let saved_keys = $derived(Object.keys(saved_options));
 
-	let amount: MultiBodyGravitationOptions['amount'] = 20;
-	let velocity_magnitude: MultiBodyGravitationOptions['velocity_magnitude'] = [0.1, 0.5];
-	let position_magnitude: MultiBodyGravitationOptions['position_magnitude'] = [100, 150];
-	let mass_range: MultiBodyGravitationOptions['mass_range'] = [100, 300];
-	let center_mass: MultiBodyGravitationOptions['center_mass'] = 500;
-	let distance_range: MultiBodyGravitationOptions['distance_range'] = [10_000, 20_000];
-	let gravity: MultiBodyGravitationOptions['gravity'] = 0.05;
-	let palette: MultiBodyGravitationOptions['palette'] = ['#ffffff'];
-	let alpha: MultiBodyGravitationOptions['alpha'] = 0.4;
-	let trail: MultiBodyGravitationOptions['trail'] = 1;
+	let options: MultiBodyGravitationOptions = $state({
+		amount: 20,
+		velocity_magnitude: [0.1, 0.5],
+		position_magnitude: [100, 150],
+		mass_range: [100, 300],
+		center_mass: 500,
+		distance_range: [10_000, 20_000],
+		gravity: 0.05,
+		palette: ['#ffffff'],
+		alpha: 0.4,
+		trail: 1
+	});
 
 	function gravitation(canvas: HTMLCanvasElement, options: MultiBodyGravitationOptions) {
 		const ctx = canvas.getContext('2d');
@@ -24,7 +26,7 @@
 			if (instance) {
 				instance.destroy();
 			}
-			canvas.width = window.innerWidth * 0.6;
+			canvas.width = window.innerWidth * 0.75;
 			canvas.height = (canvas.width * 3) / 4;
 			instance = new MultiBodyGravitation(ctx, options);
 		}
@@ -44,67 +46,46 @@
 	function save_options() {
 		const name = prompt('Name of the options');
 		if (!name) return;
-		const options = {
-			amount,
-			velocity_magnitude,
-			position_magnitude,
-			mass_range,
-			center_mass,
-			distance_range,
-			gravity,
-			palette,
-			alpha,
-			trail
-		};
 		localStorage.setItem(name, JSON.stringify(options));
 		get_saved_options();
 	}
 
 	function get_saved_options() {
-		const keys = Object.entries(localStorage);
-		const options = keys
-			.filter(([_, value]) => {
-				let parsed;
-				try {
-					parsed = JSON.parse(value);
-				} catch (e) {
-					return false;
+		for (const key in localStorage) {
+			const value = localStorage.getItem(key)!;
+			try {
+				const parsed_value = JSON.parse(value);
+				if (parsed_value && typeof parsed_value === 'object' && parsed_value.amount !== undefined) {
+					saved_options[key] = parsed_value;
 				}
-				return parsed.amount !== undefined;
-			})
-			.map(([key, value]) => [key, JSON.parse(value)] as [string, MultiBodyGravitationOptions]);
-		saved_options = options;
+			} catch (e) {
+				continue;
+			}
+		}
 	}
 
-	function load_options(options: MultiBodyGravitationOptions) {
-		return () => {
-			amount = options.amount;
-			velocity_magnitude[0] = options.velocity_magnitude[0];
-			velocity_magnitude[1] = options.velocity_magnitude[1];
-			position_magnitude[0] = options.position_magnitude[0];
-			position_magnitude[1] = options.position_magnitude[1];
-			mass_range[0] = options.mass_range[0];
-			mass_range[1] = options.mass_range[1];
-			center_mass = options.center_mass;
-			distance_range[0] = options.distance_range[0];
-			distance_range[1] = options.distance_range[1];
-			gravity = options.gravity;
-			palette = options.palette || ['#ffffff'];
-			alpha = options.alpha || 0.4;
-			trail = options.trail || 1;
-		};
+	function load_options(event: Event) {
+		if (event.target instanceof HTMLButtonElement) {
+			const key = event.target.value;
+			const persisted_options = saved_options[key];
+			options = { ...options, ...persisted_options };
+		}
 	}
 
-	function copy_saved_options(options: MultiBodyGravitationOptions) {
-		return () => {
-			navigator.clipboard.writeText(JSON.stringify(options));
-		};
+	function copy_saved_options(event: Event) {
+		if (event.target instanceof HTMLButtonElement) {
+			const key = event.target.value;
+			const persisted_options = saved_options[key];
+			navigator.clipboard.writeText(JSON.stringify(persisted_options));
+		}
 	}
 
-	function delete_saved_options(key: string) {
-		return () => {
+	function delete_saved_options(event: Event) {
+		if (event.target instanceof HTMLButtonElement) {
+			const key = event.target.value;
 			localStorage.removeItem(key);
-		};
+			get_saved_options();
+		}
 	}
 
 	function add_new_options() {
@@ -117,16 +98,16 @@
 	}
 
 	function add_color() {
-		palette = [...palette, '#ffffff'];
+		options.palette = [...options.palette, '#ffffff'];
 	}
 
 	function remove_color(color: string) {
 		return () => {
-			palette = palette.filter((c) => c !== color);
+			options.palette = options.palette.filter((c) => c !== color);
 		};
 	}
 
-	onMount(() => {
+	$effect(() => {
 		get_saved_options();
 	});
 </script>
@@ -134,105 +115,92 @@
 <svelte:head>
 	<title>Multi Body Gravitation</title>
 </svelte:head>
-<canvas
-	use:gravitation={{
-		amount,
-		velocity_magnitude,
-		position_magnitude,
-		mass_range,
-		center_mass,
-		distance_range,
-		gravity,
-		palette,
-		alpha,
-		trail
-	}}
-></canvas>
+<canvas use:gravitation={options}></canvas>
 
 <menu>
 	<h2>Options</h2>
 	<details>
-		<summary>Saved options ({saved_options.length})</summary>
+		<summary>Saved options ({saved_keys.length})</summary>
 		<ul>
-			{#each saved_options as [key, options]}
+			{#each saved_keys as key}
 				<li>
 					<h3>{key}</h3>
-					<button on:click={load_options(options)}>Load</button>
-					<button on:click={copy_saved_options(options)}>Copy</button>
-					<button on:click={delete_saved_options(key)}>Delete</button>
+					<button value={key} onclick={load_options}>Load</button>
+					<button value={key} onclick={copy_saved_options}>Copy</button>
+					<button value={key} onclick={delete_saved_options}>Delete</button>
 				</li>
 			{/each}
 		</ul>
 
-		<button on:click={add_new_options}>+ Add new options</button>
+		<button onclick={add_new_options}>+ Add new options</button>
 	</details>
 
 	<fieldset>
 		<legend>Amount</legend>
-		<input type="range" bind:value={amount} min="1" max="500" />
-		<input type="text" bind:value={amount} />
+		<input type="range" bind:value={options.amount} min="1" max="500" />
+		<input type="text" bind:value={options.amount} />
 	</fieldset>
 	<fieldset>
 		<legend>Velocity magnitude</legend>
-		<input type="range" bind:value={velocity_magnitude[0]} min="0" max="2" step="0.001" />
-		<input type="text" bind:value={velocity_magnitude[0]} />
-		<input type="range" bind:value={velocity_magnitude[1]} min="0" max="2" step="0.001" />
-		<input type="text" bind:value={velocity_magnitude[1]} />
+		<input type="range" bind:value={options.velocity_magnitude[0]} min="0" max="2" step="0.001" />
+		<input type="text" bind:value={options.velocity_magnitude[0]} />
+		<input type="range" bind:value={options.velocity_magnitude[1]} min="0" max="2" step="0.001" />
+		<input type="text" bind:value={options.velocity_magnitude[1]} />
 	</fieldset>
 	<fieldset>
 		<legend>Position magnitude</legend>
-		<input type="range" bind:value={position_magnitude[0]} min="0" max="10000" />
-		<input type="text" bind:value={position_magnitude[0]} />
-		<input type="range" bind:value={position_magnitude[1]} min="0" max="10000" />
-		<input type="text" bind:value={position_magnitude[1]} />
+		<input type="range" bind:value={options.position_magnitude[0]} min="0" max="10000" />
+		<input type="text" bind:value={options.position_magnitude[0]} />
+		<input type="range" bind:value={options.position_magnitude[1]} min="0" max="10000" />
+		<input type="text" bind:value={options.position_magnitude[1]} />
 	</fieldset>
 	<fieldset>
 		<legend>Mass range</legend>
-		<input type="range" bind:value={mass_range[0]} min="1" max="10000" />
-		<input type="text" bind:value={mass_range[0]} />
-		<input type="range" bind:value={mass_range[1]} min="1" max="10000" />
-		<input type="text" bind:value={mass_range[1]} />
+		<input type="range" bind:value={options.mass_range[0]} min="1" max="10000" />
+		<input type="text" bind:value={options.mass_range[0]} />
+		<input type="range" bind:value={options.mass_range[1]} min="1" max="10000" />
+		<input type="text" bind:value={options.mass_range[1]} />
 	</fieldset>
 	<fieldset>
 		<legend>Center mass</legend>
-		<input type="range" bind:value={center_mass} min="1" max="10000" />
-		<input type="text" bind:value={center_mass} />
+		<input type="range" bind:value={options.center_mass} min="1" max="10000" />
+		<input type="text" bind:value={options.center_mass} />
 	</fieldset>
 	<fieldset>
 		<legend>Distance range</legend>
-		<input type="range" bind:value={distance_range[0]} min="1" max="100000" />
-		<input type="text" bind:value={distance_range[0]} />
-		<input type="range" bind:value={distance_range[1]} min="1" max="100000" />
-		<input type="text" bind:value={distance_range[1]} />
+		<input type="range" bind:value={options.distance_range[0]} min="1" max="100000" />
+		<input type="text" bind:value={options.distance_range[0]} />
+		<input type="range" bind:value={options.distance_range[1]} min="1" max="100000" />
+		<input type="text" bind:value={options.distance_range[1]} />
 	</fieldset>
 	<fieldset>
 		<legend>Gravity</legend>
-		<input type="range" bind:value={gravity} min="0" max="10" step="0.001" />
-		<input type="text" bind:value={gravity} />
+		<input type="range" bind:value={options.gravity} min="0" max="10" step="0.001" />
+		<input type="text" bind:value={options.gravity} />
 	</fieldset>
 	<fieldset>
 		<legend>Palette</legend>
 		<ol>
-			{#each palette as color, idx}
+			{#each options.palette as color, idx}
 				<li>
-					<input type="color" bind:value={color} />
+					<input type="color" bind:value={options.palette[idx]} />
 					{#if idx > 0}
-						<button on:click={remove_color(color)}>X</button>
+						<button onclick={remove_color(color)}>X</button>
 					{/if}
 				</li>
 			{/each}
 		</ol>
-		<button on:click={add_color}>Add color</button>
+		<button onclick={add_color}>Add color</button>
 		<label for="alpha">Alpha</label>
-		<input id="alpha" type="range" bind:value={alpha} min="0" max="1" step="0.01" />
-		<input type="text" bind:value={alpha} />
+		<input id="alpha" type="range" bind:value={options.alpha} min="0" max="1" step="0.01" />
+		<input type="text" bind:value={options.alpha} />
 	</fieldset>
 	<fieldset>
 		<legend>Trail (1 is no trail, 0 is infinite trail)</legend>
-		<input type="range" bind:value={trail} min="0" max="1" step="0.01" />
-		<input type="text" bind:value={trail} />
+		<input type="range" bind:value={options.trail} min="0" max="1" step="0.01" />
+		<input type="text" bind:value={options.trail} />
 	</fieldset>
-	<button on:click={save_options}>Save options</button>
+	<button onclick={save_options}>Save options</button>
 </menu>
 
 <style>

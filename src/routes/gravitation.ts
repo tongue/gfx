@@ -56,38 +56,27 @@ export class MultiBodyGravitation {
 			options.gravity,
 			random_color(options.palette)
 		);
-		this.setup(
-			options.amount,
-			options.velocity_magnitude,
-			options.position_magnitude,
-			options.mass_range,
-			options.distance_range,
-			options.gravity,
-			options.palette,
-			options.alpha
-		);
+		this.setup(options);
 		this.raf = requestAnimationFrame(this.update.bind(this));
 	}
 
-	private setup(
-		amount: number,
-		velocity_magnitude: [number, number],
-		position_magnitude: [number, number],
-		mass_range: [number, number],
-		distance_range: [number, number],
-		gravity: number,
-		palette: string[],
-		alpha: number
-	) {
-		for (let i = 0; i < amount; i++) {
+	private setup(options: MultiBodyGravitationOptions) {
+		for (let i = 0; i < options.amount; i++) {
 			const position = Vector.random();
 			const velocity = position.clone();
-			velocity.setMagnitude(random_between(...velocity_magnitude));
-			position.setMagnitude(random_between(...position_magnitude));
+			velocity.setMagnitude(random_between(...options.velocity_magnitude));
+			position.setMagnitude(random_between(...options.position_magnitude));
 			velocity.rotate(Math.PI / 2);
-			const mass = random_between(...mass_range);
+			const mass = random_between(...options.mass_range);
 			this.circles.push(
-				new Circle(position, velocity, mass, distance_range, gravity, random_color(palette, alpha))
+				new Circle(
+					position,
+					velocity,
+					mass,
+					options.distance_range,
+					options.gravity,
+					random_color(options.palette, options.alpha)
+				)
 			);
 		}
 	}
