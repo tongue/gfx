@@ -1,34 +1,37 @@
 <script lang="ts">
-	import { MultiBodyGravitation, type MultiBodyGravitationOptions } from './gravitation';
+	import {
+		EntityCluster,
+		MutatorType,
+		options as cluster_options,
+		type EntityClusterOptions
+	} from './gravitation';
+	import Option from './option.svelte';
+	import PersistedOptions from './persist.svelte';
+	import { persisted_options } from './persisted-options.svelte';
+	import { options as igb_options } from './mutators/invisible-gravitational-body';
+	import { options as g_options } from './mutators/gravity';
+	import { deep_clone } from './utils';
 
-	let saved_options: { [key: string]: MultiBodyGravitationOptions } = $state({});
-	let saved_keys = $derived(Object.keys(saved_options));
+	let options: { [key: string]: any } = $state(deep_clone(cluster_options.default));
+	let dialog: HTMLDialogElement;
 
-	let options: MultiBodyGravitationOptions = $state({
-		amount: 20,
-		velocity_magnitude: [0.1, 0.5],
-		position_magnitude: [100, 150],
-		mass_range: [100, 300],
-		center_mass: 500,
-		distance_range: [10_000, 20_000],
-		gravity: 0.05,
-		palette: ['#ffffff'],
-		alpha: 0.4,
-		trail: 1
-	});
+	const mutator_options: { [key: string]: any } = {
+		[MutatorType.Gravity]: g_options,
+		[MutatorType.InvisibleGravitationalBody]: igb_options
+	};
 
-	function gravitation(canvas: HTMLCanvasElement, options: MultiBodyGravitationOptions) {
+	function cluster(canvas: HTMLCanvasElement, options: any) {
 		const ctx = canvas.getContext('2d');
-		let instance: MultiBodyGravitation | null = null;
+		let instance: EntityCluster | null = null;
 
-		function update(options: MultiBodyGravitationOptions) {
+		function update(options: EntityClusterOptions) {
 			if (!ctx) return;
 			if (instance) {
 				instance.destroy();
 			}
-			canvas.width = window.innerWidth * 0.75;
+			canvas.width = window.innerWidth;
 			canvas.height = (canvas.width * 3) / 4;
-			instance = new MultiBodyGravitation(ctx, options);
+			instance = new EntityCluster(ctx, options);
 		}
 
 		update(options);
@@ -43,235 +46,152 @@
 		};
 	}
 
-	function save_options() {
-		const name = prompt('Name of the options');
-		if (!name) return;
-		localStorage.setItem(name, JSON.stringify(options));
-		get_saved_options();
+	function add_mutator(event: Event) {
+		event.preventDefault();
+		const values = new FormData(event.target as HTMLFormElement);
+		const type = values.get('type') as MutatorType;
+		options.mutators.push({ type, options: deep_clone(mutator_options[type].default) });
 	}
 
-	function get_saved_options() {
-		for (const key in localStorage) {
-			const value = localStorage.getItem(key)!;
-			try {
-				const parsed_value = JSON.parse(value);
-				if (parsed_value && typeof parsed_value === 'object' && parsed_value.amount !== undefined) {
-					saved_options[key] = parsed_value;
-				}
-			} catch (e) {
-				continue;
-			}
-		}
-	}
-
-	function load_options(event: Event) {
-		if (event.target instanceof HTMLButtonElement) {
-			const key = event.target.value;
-			const persisted_options = saved_options[key];
-			options = { ...options, ...persisted_options };
-		}
-	}
-
-	function copy_saved_options(event: Event) {
-		if (event.target instanceof HTMLButtonElement) {
-			const key = event.target.value;
-			const persisted_options = saved_options[key];
-			navigator.clipboard.writeText(JSON.stringify(persisted_options));
-		}
-	}
-
-	function delete_saved_options(event: Event) {
-		if (event.target instanceof HTMLButtonElement) {
-			const key = event.target.value;
-			localStorage.removeItem(key);
-			get_saved_options();
-		}
-	}
-
-	function add_new_options() {
-		const string_options = prompt('Options in JSON format');
-		if (!string_options) return;
-		const name = prompt('Name of the options');
-		if (!name) return;
-		localStorage.setItem(name, string_options);
-		get_saved_options();
-	}
-
-	function add_color() {
-		options.palette = [...options.palette, '#ffffff'];
-	}
-
-	function remove_color(color: string) {
+	function remove_mutator(idx: number) {
 		return () => {
-			options.palette = options.palette.filter((c) => c !== color);
+			if (Array.isArray(options.mutators)) {
+				options.mutators.splice(idx, 1);
+			}
 		};
 	}
 
-	$effect(() => {
-		get_saved_options();
-	});
+	function save_options() {
+		const name = prompt('Enter a name for this configuration');
+		if (!name) return;
+		persisted_options.add(name, options);
+	}
+
+	function show_options() {
+		dialog.showModal();
+	}
+
+	function hide_options() {
+		dialog.close();
+	}
 </script>
 
 <svelte:head>
-	<title>Multi Body Gravitation</title>
+	<title>Cluster</title>
 </svelte:head>
-<canvas use:gravitation={options}></canvas>
+<canvas use:cluster={options}></canvas>
 
-<menu>
-	<h2>Options</h2>
-	<details>
-		<summary>Saved options ({saved_keys.length})</summary>
-		<ul>
-			{#each saved_keys as key}
-				<li>
-					<h3>{key}</h3>
-					<button value={key} onclick={load_options}>Load</button>
-					<button value={key} onclick={copy_saved_options}>Copy</button>
-					<button value={key} onclick={delete_saved_options}>Delete</button>
-				</li>
-			{/each}
-		</ul>
+<dialog bind:this={dialog}>
+	<menu>
+		<header>
+			<h2>Options</h2>
+			<button onclick={hide_options}>Close</button>
+		</header>
 
-		<button onclick={add_new_options}>+ Add new options</button>
-	</details>
+		<PersistedOptions bind:options />
 
-	<fieldset>
-		<legend>Amount</legend>
-		<input type="range" bind:value={options.amount} min="1" max="500" />
-		<input type="text" bind:value={options.amount} />
-	</fieldset>
-	<fieldset>
-		<legend>Velocity magnitude</legend>
-		<input type="range" bind:value={options.velocity_magnitude[0]} min="0" max="2" step="0.001" />
-		<input type="text" bind:value={options.velocity_magnitude[0]} />
-		<input type="range" bind:value={options.velocity_magnitude[1]} min="0" max="2" step="0.001" />
-		<input type="text" bind:value={options.velocity_magnitude[1]} />
-	</fieldset>
-	<fieldset>
-		<legend>Position magnitude</legend>
-		<input type="range" bind:value={options.position_magnitude[0]} min="0" max="10000" />
-		<input type="text" bind:value={options.position_magnitude[0]} />
-		<input type="range" bind:value={options.position_magnitude[1]} min="0" max="10000" />
-		<input type="text" bind:value={options.position_magnitude[1]} />
-	</fieldset>
-	<fieldset>
-		<legend>Mass range</legend>
-		<input type="range" bind:value={options.mass_range[0]} min="1" max="10000" />
-		<input type="text" bind:value={options.mass_range[0]} />
-		<input type="range" bind:value={options.mass_range[1]} min="1" max="10000" />
-		<input type="text" bind:value={options.mass_range[1]} />
-	</fieldset>
-	<fieldset>
-		<legend>Center mass</legend>
-		<input type="range" bind:value={options.center_mass} min="1" max="10000" />
-		<input type="text" bind:value={options.center_mass} />
-	</fieldset>
-	<fieldset>
-		<legend>Distance range</legend>
-		<input type="range" bind:value={options.distance_range[0]} min="1" max="100000" />
-		<input type="text" bind:value={options.distance_range[0]} />
-		<input type="range" bind:value={options.distance_range[1]} min="1" max="100000" />
-		<input type="text" bind:value={options.distance_range[1]} />
-	</fieldset>
-	<fieldset>
-		<legend>Gravity</legend>
-		<input type="range" bind:value={options.gravity} min="0" max="10" step="0.001" />
-		<input type="text" bind:value={options.gravity} />
-	</fieldset>
-	<fieldset>
-		<legend>Palette</legend>
-		<ol>
-			{#each options.palette as color, idx}
-				<li>
-					<input type="color" bind:value={options.palette[idx]} />
-					{#if idx > 0}
-						<button onclick={remove_color(color)}>X</button>
-					{/if}
-				</li>
-			{/each}
-		</ol>
-		<button onclick={add_color}>Add color</button>
-		<label for="alpha">Alpha</label>
-		<input id="alpha" type="range" bind:value={options.alpha} min="0" max="1" step="0.01" />
-		<input type="text" bind:value={options.alpha} />
-	</fieldset>
-	<fieldset>
-		<legend>Trail (1 is no trail, 0 is infinite trail)</legend>
-		<input type="range" bind:value={options.trail} min="0" max="1" step="0.01" />
-		<input type="text" bind:value={options.trail} />
-	</fieldset>
-	<button onclick={save_options}>Save options</button>
-</menu>
+		<details open>
+			<summary>{cluster_options.config.title}</summary>
+			<div>
+				{#each cluster_options.config.configuration as { value, title, controls }}
+					<Option {title} {controls} bind:value={options[value]} />
+				{/each}
+
+				<fieldset>
+					<legend>Mutators</legend>
+					{#each options.mutators as mutator, idx}
+						{#if mutator.type in mutator_options}
+							{@const mutator_cfg = mutator_options[mutator.type].config}
+							<details>
+								<summary>{mutator_cfg.title}</summary>
+								<div>
+									{#each mutator_cfg.configuration as { value, title, controls }}
+										<Option {title} {controls} bind:value={options.mutators[idx].options[value]} />
+									{/each}
+								</div>
+								<button onclick={remove_mutator(idx)}>Remove mutator</button>
+							</details>
+						{/if}
+					{/each}
+					<form onsubmit={add_mutator}>
+						<select name="type">
+							{#each Object.keys(mutator_options) as type}
+								<option value={type}>{type}</option>
+							{/each}
+						</select>
+						<button>Add mutator</button>
+					</form>
+				</fieldset>
+				<button onclick={save_options}>Save options</button>
+			</div>
+		</details>
+	</menu>
+</dialog>
+<nav>
+	<button onclick={show_options}>Show options</button>
+</nav>
 
 <style>
 	:global(body) {
+		margin: 0;
 		background-color: #f8f8f8;
-		font-family:
-			system-ui,
-			-apple-system,
-			BlinkMacSystemFont,
-			'Segoe UI',
-			Roboto,
-			Oxygen,
-			Ubuntu,
-			Cantarell,
-			'Open Sans',
-			'Helvetica Neue',
-			sans-serif;
+		font-family: system-ui, sans-serif;
+	}
+
+	nav {
+		position: fixed;
+		top: 1em;
+		right: 1em;
+	}
+
+	canvas {
+		background-color: #000;
+	}
+
+	dialog {
+		width: 100%;
+		border: 0;
+		background-color: transparent;
+	}
+	dialog::backdrop {
+		background: none;
 	}
 
 	menu {
+		position: fixed;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		margin: 0;
+
+		background-color: #f8f8f8;
+
 		display: flex;
 		flex-direction: column;
 		gap: 1em;
 
-		position: fixed;
-		right: 0;
-		top: 0;
-		bottom: 0;
 		overflow: auto;
 		width: 20vw;
 		padding-right: 1em;
 	}
 
-	ul,
-	ol {
+	menu header {
 		display: flex;
-		flex-direction: column;
-		gap: 0.5em;
-		list-style: none;
-		padding: 0;
+		justify-content: space-between;
 	}
 
-	ul li h3 {
-		font-size: 1em;
-		margin: 0.1em 0 0;
+	button {
+		margin: 1em 0;
 	}
-	ol {
-		flex-direction: row;
-		flex-wrap: wrap;
-	}
-	ol + button {
-		margin-top: 2em;
-	}
-	button + label {
+
+	details div {
+		display: flex;
+		flex-direction: column;
+		gap: 1em;
 		margin-top: 1em;
 	}
 
-	fieldset {
-		display: flex;
-		flex-direction: column;
-	}
-
-	details summary {
+	details :global(summary) {
 		cursor: pointer;
-	}
-
-	details ul + button {
-		margin-top: 3em;
-	}
-
-	h2 {
-		margin: 0 0 0.1em;
 	}
 </style>

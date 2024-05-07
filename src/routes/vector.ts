@@ -12,6 +12,8 @@ export class Vector {
 	add(v: Vector) {
 		this.x += v.x;
 		this.y += v.y;
+
+		return this;
 	}
 	static add(v1: Vector, v2: Vector) {
 		return new Vector(v1.x + v2.x, v1.y + v2.y);
@@ -20,6 +22,8 @@ export class Vector {
 	multiply(scalar: number) {
 		this.x *= scalar;
 		this.y *= scalar;
+
+		return this;
 	}
 	static multiply(v: Vector, scalar: number) {
 		return new Vector(v.x * scalar, v.y * scalar);
@@ -28,6 +32,8 @@ export class Vector {
 	subtract(v: Vector) {
 		this.x -= v.x;
 		this.y -= v.y;
+
+		return this;
 	}
 	static subtract(v1: Vector, v2: Vector) {
 		return new Vector(v1.x - v2.x, v1.y - v2.y);
@@ -36,12 +42,14 @@ export class Vector {
 	divide(scalar: number) {
 		this.x /= scalar;
 		this.y /= scalar;
+
+		return this;
 	}
 	static divide(v: Vector, scalar: number) {
 		return new Vector(v.x / scalar, v.y / scalar);
 	}
 
-	setMagnitude(magnitude: number) {
+	set magnitude(magnitude: number) {
 		this.normalize();
 		this.multiply(magnitude);
 	}
@@ -49,14 +57,16 @@ export class Vector {
 	get magnitude() {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
 	}
+
 	static magnitude(v: Vector) {
 		return Math.sqrt(v.x * v.x + v.y * v.y);
 	}
 
-	get magnitudeSquared() {
+	get magnitude_squared() {
 		return this.x * this.x + this.y * this.y;
 	}
-	static magnitudeSquared(v: Vector) {
+
+	static magnitude_squared(v: Vector) {
 		return v.x * v.x + v.y * v.y;
 	}
 
@@ -64,10 +74,14 @@ export class Vector {
 		const { x, y } = this;
 		this.x = x * Math.cos(angle) - y * Math.sin(angle);
 		this.y = x * Math.sin(angle) + y * Math.cos(angle);
+
+		return this;
 	}
 
 	normalize() {
 		this.divide(this.magnitude);
+
+		return this;
 	}
 	static normalize(v: Vector) {
 		return Vector.divide(v, Vector.magnitude(v));

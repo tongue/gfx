@@ -1,80 +1,91 @@
+import type { Entity, Mutator } from './types';
 import { Vector } from './vector';
+import { random_between, random_color } from './utils';
+import { Gravity, options as g_options, type GravityOptions } from './mutators/gravity';
+import {
+	InvisibleGravitationalBody,
+	options as igb_options,
+	type InvisibleGravitationalBodyOptions
+} from './mutators/invisible-gravitational-body';
+import { Circle } from './entities/circle';
 
 // TODO: Easter egg:
 // rörelse mellan flera olika browser fönster
 
-function random_between(min: number, max: number) {
-	return Math.random() * (max - min) + min;
+export enum MutatorType {
+	Gravity = 'gravity',
+	InvisibleGravitationalBody = 'invisible_gravitational_body'
 }
 
-function clamp(value: number, min: number, max: number) {
-	return Math.min(Math.max(value, min), max);
-}
-
-function hex_to_rgb(hex: string) {
-	const r = parseInt(hex.substring(1, 3), 16);
-	const g = parseInt(hex.substring(3, 5), 16);
-	const b = parseInt(hex.substring(5, 7), 16);
-	return { r, g, b };
-}
-
-function random_color(palette: string[], alpha: number = 1) {
-	const hex_color = palette[Math.floor(random_between(0, palette.length))];
-	const { r, g, b } = hex_to_rgb(hex_color);
-	return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
-export type MultiBodyGravitationOptions = {
+export type EntityClusterOptions = {
+	debug: boolean;
 	amount: number;
 	velocity_magnitude: [number, number];
 	position_magnitude: [number, number];
 	mass_range: [number, number];
-	center_mass: number;
-	distance_range: [number, number];
-	gravity: number;
+
 	palette: string[];
 	alpha: number;
 	trail: number;
+
+	mutators: MutatorVariant[];
 };
 
-export class MultiBodyGravitation {
+type GravityMutator = {
+	type: MutatorType.Gravity;
+	options: GravityOptions;
+};
+
+type InvisibleGravitationalBodyMutator = {
+	type: MutatorType.InvisibleGravitationalBody;
+	options: InvisibleGravitationalBodyOptions;
+};
+
+type MutatorVariant = GravityMutator | InvisibleGravitationalBodyMutator;
+
+const mutator_map = {
+	[MutatorType.Gravity]: Gravity,
+	[MutatorType.InvisibleGravitationalBody]: InvisibleGravitationalBody
+};
+
+export class EntityCluster {
 	raf: ReturnType<typeof requestAnimationFrame> | null = null;
-	circles: Circle[] = [];
-	center: Circle;
+	entities: Entity[] = [];
+	mutators: Mutator[] = [];
 	trail: number;
+	debug = true;
 
 	constructor(
 		private ctx: CanvasRenderingContext2D,
-		options: MultiBodyGravitationOptions
+		options: EntityClusterOptions
 	) {
 		this.trail = options.trail;
-		this.center = new Circle(
-			new Vector(0, 0),
-			new Vector(0, 0),
-			options.center_mass,
-			options.distance_range,
-			options.gravity,
-			random_color(options.palette)
-		);
+		this.debug = options.debug;
 		this.setup(options);
 		this.raf = requestAnimationFrame(this.update.bind(this));
 	}
 
-	private setup(options: MultiBodyGravitationOptions) {
+	private setup(options: EntityClusterOptions) {
+		for (const mutator of options.mutators) {
+			const m = mutator_map[mutator.type];
+			const opts = mutator.options;
+			this.mutators.push(new m(opts as { [key: string]: unknown }, this.ctx));
+		}
+
 		for (let i = 0; i < options.amount; i++) {
 			const position = Vector.random();
+			const acceleration = new Vector(0, 0);
 			const velocity = position.clone();
-			velocity.setMagnitude(random_between(...options.velocity_magnitude));
-			position.setMagnitude(random_between(...options.position_magnitude));
+			velocity.magnitude = random_between(...options.velocity_magnitude);
+			position.magnitude = random_between(...options.position_magnitude);
 			velocity.rotate(Math.PI / 2);
 			const mass = random_between(...options.mass_range);
-			this.circles.push(
+			this.entities.push(
 				new Circle(
 					position,
 					velocity,
+					acceleration,
 					mass,
-					options.distance_range,
-					options.gravity,
 					random_color(options.palette, options.alpha)
 				)
 			);
@@ -86,21 +97,29 @@ export class MultiBodyGravitation {
 			cancelAnimationFrame(this.raf);
 		}
 		this.raf = requestAnimationFrame(this.update.bind(this));
+
 		this.ctx.fillStyle = `rgba(0, 0, 0, ${this.trail})`;
 		this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-		for (let i = 0; i < this.circles.length; i++) {
-			this.center.attract(this.circles[i]);
-			for (let j = 0; j < this.circles.length; j++) {
-				if (i !== j) {
-					this.circles[i].attract(this.circles[j]);
+
+		for (let entity_idx = 0; entity_idx < this.entities.length; entity_idx++) {
+			const entity = this.entities[entity_idx];
+			for (let mutator_idx = 0; mutator_idx < this.mutators.length; mutator_idx++) {
+				const mutator = this.mutators[mutator_idx];
+				mutator.update(entity, this.entities);
+				if (this.debug) {
+					mutator.debug();
 				}
 			}
 		}
 
-		for (let i = 0; i < this.circles.length; i++) {
-			const circle = this.circles[i];
-			circle.update();
-			circle.draw(this.ctx);
+		this.draw();
+	}
+
+	private draw() {
+		for (let entity_idx = 0; entity_idx < this.entities.length; entity_idx++) {
+			const entity = this.entities[entity_idx];
+			entity.update();
+			entity.draw(this.ctx);
 		}
 	}
 
@@ -111,46 +130,80 @@ export class MultiBodyGravitation {
 	}
 }
 
-class Circle {
-	private radius: number;
-	private acceleration = new Vector(0, 0);
-
-	constructor(
-		private position: Vector,
-		private velocity: Vector,
-		private mass: number,
-		private distance_range: [number, number],
-		private gravity: number = 1,
-		private color: string
-	) {
-		this.radius = Math.sqrt(mass) * 2;
+export const options = {
+	default: {
+		debug: true,
+		amount: 20,
+		velocity_magnitude: [0.1, 0.5],
+		position_magnitude: [100, 150],
+		mass_range: [100, 300],
+		gravity: 0.05,
+		palette: ['#ffffff'],
+		alpha: 0.4,
+		trail: 1,
+		mutators: [
+			{
+				type: MutatorType.InvisibleGravitationalBody,
+				options: { ...igb_options.default }
+			},
+			{
+				type: MutatorType.Gravity,
+				options: { ...g_options.default }
+			}
+		]
+	},
+	config: {
+		title: 'Entity cluster',
+		configuration: [
+			{
+				value: 'debug',
+				title: 'Debug',
+				controls: [{ type: 'checkbox' }]
+			},
+			{
+				value: 'amount',
+				title: 'Amount of entities',
+				controls: [{ type: 'range', min: 1, max: 500 }]
+			},
+			{
+				value: 'velocity_magnitude',
+				title: 'Velocity magnitude',
+				controls: [
+					{ type: 'range', min: 0, max: 2, step: 0.001 },
+					{ type: 'range', min: 0, max: 2, step: 0.001 }
+				]
+			},
+			{
+				value: 'position_magnitude',
+				title: 'Position magnitude',
+				controls: [
+					{ type: 'range', min: 0, max: 10000 },
+					{ type: 'range', min: 0, max: 10000 }
+				]
+			},
+			{
+				value: 'mass_range',
+				title: 'Mass range',
+				controls: [
+					{ type: 'range', min: 1, max: 10000 },
+					{ type: 'range', min: 1, max: 10000 }
+				]
+			},
+			{
+				value: 'palette',
+				title: 'Palette',
+				controls: [{ type: 'color' }]
+			},
+			{
+				value: 'alpha',
+				title: 'Alpha',
+				controls: [{ type: 'range', min: 0, max: 1, step: 0.01 }]
+			},
+			{
+				value: 'trail',
+				title: 'Trail',
+				controls: [{ type: 'range', min: 0, max: 1, step: 0.01 }]
+			}
+		]
 	}
-
-	apply_force(force: Vector) {
-		const force_by_mass = Vector.divide(force, this.mass);
-		this.acceleration.add(force_by_mass);
-	}
-
-	attract(other: Circle) {
-		const force = Vector.subtract(this.position, other.position);
-		const distance_squared = clamp(force.magnitudeSquared, ...this.distance_range);
-		const strength = (this.gravity * (this.mass * other.mass)) / distance_squared;
-		force.setMagnitude(strength);
-		other.apply_force(force);
-	}
-
-	update() {
-		this.velocity.add(this.acceleration);
-		this.position.add(this.velocity);
-		this.acceleration.multiply(0);
-	}
-
-	draw(ctx: CanvasRenderingContext2D) {
-		const x_from_center = this.position.x + ctx.canvas.width / 2;
-		const y_from_center = this.position.y + ctx.canvas.height / 2;
-		ctx.beginPath();
-		ctx.fillStyle = this.color;
-		ctx.arc(x_from_center, y_from_center, this.radius, 0, Math.PI * 2);
-		ctx.fill();
-	}
-}
+};
