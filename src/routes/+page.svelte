@@ -11,7 +11,9 @@
 	import { options as igb_options } from './mutators/invisible-gravitational-body';
 	import { options as g_options } from './mutators/gravity';
 	import { options as sa_options } from './mutators/alpha-speed'
+	import {options as ee_options} from './mutators/endless-edges';
 	import { deep_clone } from './utils';
+
 
 	let options: { [key: string]: any } = $state(deep_clone(cluster_options.default));
 	let dialog: HTMLDialogElement;
@@ -19,7 +21,8 @@
 	const mutator_options: { [key: string]: any } = {
 		[MutatorType.Gravity]: g_options,
 		[MutatorType.InvisibleGravitationalBody]: igb_options,
-		[MutatorType.AlphaSpeed]: sa_options
+		[MutatorType.AlphaSpeed]: sa_options,
+		[MutatorType.EndlessEdge]: ee_options
 	};
 
 	function cluster(canvas: HTMLCanvasElement, options: any) {

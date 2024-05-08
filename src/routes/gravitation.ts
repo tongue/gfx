@@ -9,6 +9,7 @@ import {
 } from './mutators/invisible-gravitational-body';
 import { AlphaSpeed, options as as_options, type AlphaSpeedOptions } from './mutators/alpha-speed';
 import { Circle } from './entities/circle';
+import { EndlessEdge } from './mutators/endless-edges';
 
 // TODO: Easter egg:
 // rörelse mellan flera olika browser fönster
@@ -16,7 +17,8 @@ import { Circle } from './entities/circle';
 export enum MutatorType {
 	Gravity = 'gravity',
 	InvisibleGravitationalBody = 'invisible_gravitational_body',
-	AlphaSpeed = 'alpha_speed'
+	AlphaSpeed = 'alpha_speed',
+	EndlessEdge = 'endless_edge'
 }
 
 export type EntityClusterOptions = {
@@ -48,12 +50,18 @@ type AlphaSpeedMutator = {
 	options: AlphaSpeedOptions;
 };
 
-type MutatorVariant = GravityMutator | InvisibleGravitationalBodyMutator | AlphaSpeedMutator;
+type EndlessEdgeMutator = {
+	type: MutatorType.EndlessEdge;
+	options: EndlessEdge;
+};
+
+type MutatorVariant = GravityMutator | InvisibleGravitationalBodyMutator | AlphaSpeedMutator | EndlessEdgeMutator;
 
 const mutator_map = {
 	[MutatorType.Gravity]: Gravity,
 	[MutatorType.InvisibleGravitationalBody]: InvisibleGravitationalBody,
-	[MutatorType.AlphaSpeed]: AlphaSpeed
+	[MutatorType.AlphaSpeed]: AlphaSpeed, 
+	[MutatorType.EndlessEdge]: EndlessEdge
 };
 
 export class EntityCluster {
