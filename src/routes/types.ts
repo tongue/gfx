@@ -1,3 +1,4 @@
+import type { Color } from './color';
 import type { Vector } from './vector';
 
 export interface Entity {
@@ -6,7 +7,7 @@ export interface Entity {
 	mass: number;
 	velocity: Vector;
 	acceleration: Vector;
-	color: string;
+	color: Color;
 	update(): void;
 	draw(ctx: CanvasRenderingContext2D): void;
 }

@@ -1,5 +1,7 @@
 <script lang="ts">
-	let { value = $bindable() }: {
+	let {
+		value = $bindable()
+	}: {
 		value: string[];
 	} = $props();
 
@@ -13,6 +15,7 @@
 		};
 	}
 </script>
+
 <ol>
 	{#each value as color, idx}
 		<li>

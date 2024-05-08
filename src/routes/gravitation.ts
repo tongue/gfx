@@ -1,12 +1,13 @@
 import type { Entity, Mutator } from './types';
 import { Vector } from './vector';
-import { random_between, random_color } from './utils';
+import { random_between, random_item } from './utils';
 import { Gravity, options as g_options, type GravityOptions } from './mutators/gravity';
 import {
 	InvisibleGravitationalBody,
 	options as igb_options,
 	type InvisibleGravitationalBodyOptions
 } from './mutators/invisible-gravitational-body';
+import { AlphaSpeed } from './mutators/alpha-speed';
 import { Circle } from './entities/circle';
 
 // TODO: Easter egg:
@@ -14,7 +15,8 @@ import { Circle } from './entities/circle';
 
 export enum MutatorType {
 	Gravity = 'gravity',
-	InvisibleGravitationalBody = 'invisible_gravitational_body'
+	InvisibleGravitationalBody = 'invisible_gravitational_body',
+	AlphaSpeed = 'alpha_speed'
 }
 
 export type EntityClusterOptions = {
@@ -41,11 +43,17 @@ type InvisibleGravitationalBodyMutator = {
 	options: InvisibleGravitationalBodyOptions;
 };
 
-type MutatorVariant = GravityMutator | InvisibleGravitationalBodyMutator;
+type AlphaSpeedMutator = {
+	type: MutatorType.AlphaSpeed;
+	options: {};
+};
+
+type MutatorVariant = GravityMutator | InvisibleGravitationalBodyMutator | AlphaSpeedMutator;
 
 const mutator_map = {
 	[MutatorType.Gravity]: Gravity,
-	[MutatorType.InvisibleGravitationalBody]: InvisibleGravitationalBody
+	[MutatorType.InvisibleGravitationalBody]: InvisibleGravitationalBody,
+	[MutatorType.AlphaSpeed]: AlphaSpeed
 };
 
 export class EntityCluster {
@@ -88,7 +96,8 @@ export class EntityCluster {
 					acceleration,
 					drag,
 					mass,
-					random_color(options.palette, options.alpha)
+					random_item(options.palette),
+					options.alpha
 				)
 			);
 		}
@@ -152,6 +161,10 @@ export const options = {
 			{
 				type: MutatorType.Gravity,
 				options: { ...g_options.default }
+			},
+			{
+				type: MutatorType.AlphaSpeed,
+				options: {}
 			}
 		]
 	},

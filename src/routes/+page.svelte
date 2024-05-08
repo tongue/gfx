@@ -25,6 +25,7 @@
 		let instance: EntityCluster | null = null;
 
 		function update(options: EntityClusterOptions) {
+			console.log(options);
 			if (!ctx) return;
 			if (instance) {
 				instance.destroy();
