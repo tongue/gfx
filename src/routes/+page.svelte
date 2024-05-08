@@ -10,10 +10,10 @@
 	import { persisted_options } from './persisted-options.svelte';
 	import { options as igb_options } from './mutators/invisible-gravitational-body';
 	import { options as g_options } from './mutators/gravity';
-	import { options as sa_options } from './mutators/alpha-speed'
-	import {options as ee_options} from './mutators/endless-edges';
+	import { options as sa_options } from './mutators/alpha-speed';
+	import { options as ee_options } from './mutators/endless-edges';
+	import { options as p_options } from './mutators/perlin';
 	import { deep_clone } from './utils';
-
 
 	let options: { [key: string]: any } = $state(deep_clone(cluster_options.default));
 	let dialog: HTMLDialogElement;
@@ -22,7 +22,8 @@
 		[MutatorType.Gravity]: g_options,
 		[MutatorType.InvisibleGravitationalBody]: igb_options,
 		[MutatorType.AlphaSpeed]: sa_options,
-		[MutatorType.EndlessEdge]: ee_options
+		[MutatorType.EndlessEdge]: ee_options,
+		[MutatorType.Perlin]: p_options
 	};
 
 	function cluster(canvas: HTMLCanvasElement, options: any) {
@@ -38,24 +39,24 @@
 			canvas.height = window.innerHeight;
 			instance = new EntityCluster(ctx, options);
 		}
-		
+
 		function set_canvas_size() {
 			canvas.width = window.innerWidth;
 			canvas.height = window.innerHeight;
 		}
 
 		update(options);
-		
+
 		// Update the canvas size when the window is resized
-		window.addEventListener('resize',set_canvas_size);
+		window.addEventListener('resize', set_canvas_size);
 
 		return {
 			update,
 			destroy() {
 				if (instance) {
-					instance.destroy();	
+					instance.destroy();
 				}
-				window.removeEventListener('resize',set_canvas_size);
+				window.removeEventListener('resize', set_canvas_size);
 			}
 		};
 	}

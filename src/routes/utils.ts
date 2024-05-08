@@ -13,3 +13,13 @@ export function random_item<T>(items: T[]): T {
 export function deep_clone<T>(obj: T): T {
 	return JSON.parse(JSON.stringify(obj));
 }
+
+export function map_values(
+	value: number,
+	from_min: number,
+	from_max: number,
+	to_min: number,
+	to_max: number
+) {
+	return ((value - from_min) * (to_max - to_min)) / (from_max - from_min) + to_min;
+}

@@ -9,7 +9,8 @@ import {
 } from './mutators/invisible-gravitational-body';
 import { AlphaSpeed, options as as_options, type AlphaSpeedOptions } from './mutators/alpha-speed';
 import { Circle } from './entities/circle';
-import { EndlessEdge } from './mutators/endless-edges';
+import { EndlessEdge, type EndlessEdgeOptions } from './mutators/endless-edges';
+import { Perlin, type PerlinOptions } from './mutators/perlin';
 
 // TODO: Easter egg:
 // rörelse mellan flera olika browser fönster
@@ -18,7 +19,8 @@ export enum MutatorType {
 	Gravity = 'gravity',
 	InvisibleGravitationalBody = 'invisible_gravitational_body',
 	AlphaSpeed = 'alpha_speed',
-	EndlessEdge = 'endless_edge'
+	EndlessEdge = 'endless_edge',
+	Perlin = 'perlin'
 }
 
 export type EntityClusterOptions = {
@@ -52,16 +54,27 @@ type AlphaSpeedMutator = {
 
 type EndlessEdgeMutator = {
 	type: MutatorType.EndlessEdge;
-	options: EndlessEdge;
+	options: EndlessEdgeOptions;
 };
 
-type MutatorVariant = GravityMutator | InvisibleGravitationalBodyMutator | AlphaSpeedMutator | EndlessEdgeMutator;
+type PerlinNoiseMutator = {
+	type: MutatorType.Perlin;
+	options: PerlinOptions;
+};
+
+type MutatorVariant =
+	| GravityMutator
+	| InvisibleGravitationalBodyMutator
+	| AlphaSpeedMutator
+	| EndlessEdgeMutator
+	| PerlinNoiseMutator;
 
 const mutator_map = {
 	[MutatorType.Gravity]: Gravity,
 	[MutatorType.InvisibleGravitationalBody]: InvisibleGravitationalBody,
-	[MutatorType.AlphaSpeed]: AlphaSpeed, 
-	[MutatorType.EndlessEdge]: EndlessEdge
+	[MutatorType.AlphaSpeed]: AlphaSpeed,
+	[MutatorType.EndlessEdge]: EndlessEdge,
+	[MutatorType.Perlin]: Perlin
 };
 
 export class EntityCluster {
