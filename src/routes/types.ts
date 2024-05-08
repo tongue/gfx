@@ -5,6 +5,7 @@ export interface Entity {
 	mass: number;
 	velocity: Vector;
 	acceleration: Vector;
+	color: string;
 	update(): void;
 	draw(ctx: CanvasRenderingContext2D): void;
 }

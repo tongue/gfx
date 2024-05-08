@@ -3,14 +3,16 @@ import { Vector } from '../vector';
 
 export class Circle implements Entity {
 	private radius: number;
+	private original_color: string;
 
 	constructor(
 		public position: Vector,
 		public velocity: Vector,
 		public acceleration: Vector,
 		public mass: number,
-		private color: string
+		public color: string
 	) {
+		this.original_color = color;
 		this.radius = Math.sqrt(mass);
 	}
 
@@ -27,5 +29,10 @@ export class Circle implements Entity {
 		ctx.fillStyle = this.color;
 		ctx.arc(x_from_center, y_from_center, this.radius, 0, Math.PI * 2);
 		ctx.fill();
+		this.reset();
+	}
+
+	reset() {
+		this.color = this.original_color;
 	}
 }
