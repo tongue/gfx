@@ -75,9 +75,9 @@ export class EntityCluster {
 
 	private setup(options: EntityClusterOptions) {
 		for (const mutator of options.mutators) {
-			const m = mutator_map[mutator.type];
+			const Mutator = mutator_map[mutator.type];
 			const opts = mutator.options;
-			this.mutators.push(new m(opts as { [key: string]: unknown }, this.ctx));
+			this.mutators.push(new Mutator(opts as { [key: string]: unknown }, this.ctx));
 		}
 
 		for (let i = 0; i < options.amount; i++) {
@@ -137,6 +137,9 @@ export class EntityCluster {
 		if (this.raf) {
 			cancelAnimationFrame(this.raf);
 		}
+		for (const mutator of this.mutators) {
+			mutator.destroy();
+		}
 	}
 }
 
@@ -191,9 +194,7 @@ export const options = {
 			{
 				value: 'drag',
 				title: 'Drag',
-				controls: [
-					{ type: 'range', min: 0, max: 1, step: 0.001 },
-				]
+				controls: [{ type: 'range', min: 0, max: 1, step: 0.001 }]
 			},
 			{
 				value: 'position_magnitude',

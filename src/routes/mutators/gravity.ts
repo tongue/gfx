@@ -36,6 +36,10 @@ export class Gravity implements Mutator {
 	debug() {
 		// noop
 	}
+
+	destroy() {
+		// noop
+	}
 }
 
 export const options = {

@@ -50,6 +50,10 @@ export class InvisibleGravitationalBody implements Mutator {
 		this.ctx.arc(x_from_center, y_from_center, Math.sqrt(this.mass), 0, Math.PI * 2);
 		this.ctx.stroke();
 	}
+
+	destroy() {
+		// noop
+	}
 }
 
 export const options = {

@@ -3,7 +3,7 @@ import type { Vector } from './vector';
 
 export interface Entity {
 	position: Vector;
-	drag: Vector;
+	drag: number;
 	mass: number;
 	velocity: Vector;
 	acceleration: Vector;
@@ -15,4 +15,5 @@ export interface Entity {
 export interface Mutator {
 	update(entity: Entity, all_entities: Entity[]): void;
 	debug(): void;
+	destroy(): void;
 }

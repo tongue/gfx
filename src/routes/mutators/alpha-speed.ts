@@ -24,6 +24,10 @@ export class AlphaSpeed implements Mutator {
 	debug() {
 		// noop
 	}
+
+	destroy(): void {
+		// noop
+	}
 }
 
 export const options = {
