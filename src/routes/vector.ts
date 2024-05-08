@@ -58,7 +58,7 @@ export class Vector {
 		}
 	}
 
-	get magnitude() {
+	get magnitude(): number {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
 	}
 
