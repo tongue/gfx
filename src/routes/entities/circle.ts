@@ -9,17 +9,20 @@ export class Circle implements Entity {
 		public position: Vector,
 		public velocity: Vector,
 		public acceleration: Vector,
+		public drag: Vector,
 		public mass: number,
 		public color: string
 	) {
 		this.original_color = color;
+		this.drag = drag;
 		this.radius = Math.sqrt(mass);
 	}
 
 	update() {
 		this.velocity.add(this.acceleration);
+		this.velocity.multiply(this.drag);
 		this.position.add(this.velocity);
-		this.acceleration.multiply(0);
+		this.acceleration.multiply(new Vector(0, 0));
 	}
 
 	draw(ctx: CanvasRenderingContext2D) {

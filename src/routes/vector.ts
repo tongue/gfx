@@ -19,9 +19,9 @@ export class Vector {
 		return new Vector(v1.x + v2.x, v1.y + v2.y);
 	}
 
-	multiply(scalar: number) {
-		this.x *= scalar;
-		this.y *= scalar;
+	multiply(scalar: Vector) {
+		this.x *= scalar.x;
+		this.y *= scalar.y;
 
 		return this;
 	}
@@ -51,7 +51,7 @@ export class Vector {
 
 	set magnitude(magnitude: number) {
 		this.normalize();
-		this.multiply(magnitude);
+		this.multiply(new Vector(magnitude, magnitude));
 	}
 
 	get magnitude() {

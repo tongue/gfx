@@ -23,7 +23,7 @@ export type EntityClusterOptions = {
 	velocity_magnitude: [number, number];
 	position_magnitude: [number, number];
 	mass_range: [number, number];
-
+	drag: [number, number];
 	palette: string[];
 	alpha: number;
 	trail: number;
@@ -80,11 +80,13 @@ export class EntityCluster {
 			position.magnitude = random_between(...options.position_magnitude);
 			velocity.rotate(Math.PI / 2);
 			const mass = random_between(...options.mass_range);
+			const drag = new Vector(...options.drag);
 			this.entities.push(
 				new Circle(
 					position,
 					velocity,
 					acceleration,
+					drag,
 					mass,
 					random_color(options.palette, options.alpha)
 				)
@@ -137,6 +139,7 @@ export const options = {
 		velocity_magnitude: [0.1, 0.5],
 		position_magnitude: [100, 150],
 		mass_range: [100, 300],
+		drag: [0.9, 0.9],
 		gravity: 0.05,
 		palette: ['#ffffff'],
 		alpha: 0.4,
@@ -171,6 +174,14 @@ export const options = {
 				controls: [
 					{ type: 'range', min: 0, max: 2, step: 0.001 },
 					{ type: 'range', min: 0, max: 2, step: 0.001 }
+				]
+			},
+			{
+				value: 'drag',
+				title: 'drag',
+				controls: [
+					{ type: 'range', min: 0, max: 1, step: 0.001 },
+					{ type: 'range', min: 0, max: 1, step: 0.001 }
 				]
 			},
 			{

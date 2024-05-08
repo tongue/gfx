@@ -2,6 +2,7 @@ import type { Vector } from './vector';
 
 export interface Entity {
 	position: Vector;
+	drag: Vector;
 	mass: number;
 	velocity: Vector;
 	acceleration: Vector;
