@@ -7,7 +7,7 @@ import {
 	options as igb_options,
 	type InvisibleGravitationalBodyOptions
 } from './mutators/invisible-gravitational-body';
-import { AlphaSpeed } from './mutators/alpha-speed';
+import { AlphaSpeed, options as as_options, type AlphaSpeedOptions } from './mutators/alpha-speed';
 import { Circle } from './entities/circle';
 
 // TODO: Easter egg:
@@ -25,7 +25,7 @@ export type EntityClusterOptions = {
 	velocity_magnitude: [number, number];
 	position_magnitude: [number, number];
 	mass_range: [number, number];
-	drag: [number, number];
+	drag: number;
 	palette: string[];
 	alpha: number;
 	trail: number;
@@ -45,7 +45,7 @@ type InvisibleGravitationalBodyMutator = {
 
 type AlphaSpeedMutator = {
 	type: MutatorType.AlphaSpeed;
-	options: {};
+	options: AlphaSpeedOptions;
 };
 
 type MutatorVariant = GravityMutator | InvisibleGravitationalBodyMutator | AlphaSpeedMutator;
@@ -88,13 +88,12 @@ export class EntityCluster {
 			position.magnitude = random_between(...options.position_magnitude);
 			velocity.rotate(Math.PI / 2);
 			const mass = random_between(...options.mass_range);
-			const drag = new Vector(...options.drag);
 			this.entities.push(
 				new Circle(
 					position,
 					velocity,
 					acceleration,
-					drag,
+					options.drag,
 					mass,
 					random_item(options.palette),
 					options.alpha
@@ -148,7 +147,7 @@ export const options = {
 		velocity_magnitude: [0.1, 0.5],
 		position_magnitude: [100, 150],
 		mass_range: [100, 300],
-		drag: [0.9, 0.9],
+		drag: 0.01,
 		gravity: 0.05,
 		palette: ['#ffffff'],
 		alpha: 0.4,
@@ -164,7 +163,7 @@ export const options = {
 			},
 			{
 				type: MutatorType.AlphaSpeed,
-				options: {}
+				options: { ...as_options.default }
 			}
 		]
 	},
@@ -191,10 +190,9 @@ export const options = {
 			},
 			{
 				value: 'drag',
-				title: 'drag',
+				title: 'Drag',
 				controls: [
 					{ type: 'range', min: 0, max: 1, step: 0.001 },
-					{ type: 'range', min: 0, max: 1, step: 0.001 }
 				]
 			},
 			{

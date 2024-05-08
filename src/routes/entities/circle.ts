@@ -10,7 +10,7 @@ export class Circle implements Entity {
 		public position: Vector,
 		public velocity: Vector,
 		public acceleration: Vector,
-		public drag: Vector,
+		public drag: number,
 		public mass: number,
 		hex_color: string,
 		alpha: number
@@ -21,8 +21,12 @@ export class Circle implements Entity {
 	}
 
 	update() {
+		const drag = this.velocity.clone();
+		drag.normalize();
+		drag.multiply(new Vector(-1, -1));
+		drag.magnitude = this.drag * this.velocity.magnitude_squared;
+		this.acceleration.add(Vector.divide(drag, this.mass));
 		this.velocity.add(this.acceleration);
-		this.velocity.multiply(this.drag);
 		this.position.add(this.velocity);
 		this.acceleration.multiply(new Vector(0, 0));
 	}

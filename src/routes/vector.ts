@@ -49,9 +49,13 @@ export class Vector {
 		return new Vector(v.x / scalar, v.y / scalar);
 	}
 
-	set magnitude(magnitude: number) {
+	set magnitude(magnitude: number | Vector) {
 		this.normalize();
-		this.multiply(new Vector(magnitude, magnitude));
+		if (typeof magnitude === 'number') {
+			this.multiply(new Vector(magnitude, magnitude));
+		} else {
+			this.multiply(magnitude);
+		}
 	}
 
 	get magnitude() {

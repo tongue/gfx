@@ -10,6 +10,7 @@
 	import { persisted_options } from './persisted-options.svelte';
 	import { options as igb_options } from './mutators/invisible-gravitational-body';
 	import { options as g_options } from './mutators/gravity';
+	import { options as sa_options } from './mutators/alpha-speed'
 	import { deep_clone } from './utils';
 
 	let options: { [key: string]: any } = $state(deep_clone(cluster_options.default));
@@ -17,7 +18,8 @@
 
 	const mutator_options: { [key: string]: any } = {
 		[MutatorType.Gravity]: g_options,
-		[MutatorType.InvisibleGravitationalBody]: igb_options
+		[MutatorType.InvisibleGravitationalBody]: igb_options,
+		[MutatorType.AlphaSpeed]: sa_options
 	};
 
 	function cluster(canvas: HTMLCanvasElement, options: any) {
@@ -25,7 +27,6 @@
 		let instance: EntityCluster | null = null;
 
 		function update(options: EntityClusterOptions) {
-			console.log(options);
 			if (!ctx) return;
 			if (instance) {
 				instance.destroy();

@@ -14,7 +14,6 @@ export class MousePusher implements Mutator {
 	private mass: number;
 
 	constructor(options: GravityOptions) {
-		console.log('MousePusher constructor', options);
 		this.gravity = options.gravity ?? -0.03;
 		this.distance_range = options.distance_range ?? [0, 5];
 		this.position = null;
