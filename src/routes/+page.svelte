@@ -30,18 +30,27 @@
 				instance.destroy();
 			}
 			canvas.width = window.innerWidth;
-			canvas.height = (canvas.width * 3) / 4;
+			canvas.height = window.innerHeight;
 			instance = new EntityCluster(ctx, options);
+		}
+		
+		function set_canvas_size() {
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
 		}
 
 		update(options);
+		
+		// Update the canvas size when the window is resized
+		window.addEventListener('resize',set_canvas_size);
 
 		return {
 			update,
 			destroy() {
 				if (instance) {
-					instance.destroy();
+					instance.destroy();	
 				}
+				window.removeEventListener('resize',set_canvas_size);
 			}
 		};
 	}

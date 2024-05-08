@@ -88,7 +88,7 @@ export class Vector {
 	}
 
 	static random(): Vector {
-		const random = new Vector(Math.random(), Math.random());
+		const random = new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1);
 		return random;
 	}
 
