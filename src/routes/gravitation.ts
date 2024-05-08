@@ -1,6 +1,6 @@
 import type { Entity, Mutator } from './types';
 import { Vector } from './vector';
-import { random_between, random_item } from './utils';
+import { map_values, random_between, random_item } from './utils';
 import { Gravity, options as g_options, type GravityOptions } from './mutators/gravity';
 import {
 	InvisibleGravitationalBody,
@@ -105,7 +105,7 @@ export class EntityCluster {
 			const position = Vector.random();
 			const acceleration = new Vector(0, 0);
 			const velocity = position.clone();
-			velocity.magnitude = random_between(...options.velocity_magnitude);
+			velocity.magnitude =  map_values(random_between(...options.velocity_magnitude), options.velocity_magnitude[0], options.velocity_magnitude[1], -options.velocity_magnitude[0], options.velocity_magnitude[1]);
 			position.magnitude = random_between(...options.position_magnitude);
 			velocity.rotate(Math.PI / 2);
 			const mass = random_between(...options.mass_range);
