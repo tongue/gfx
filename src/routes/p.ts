@@ -17,43 +17,46 @@ const scaled_cosine = (i: number) => 0.5 * (1.0 - Math.cos(i * Math.PI));
 
 // Linear Congruential Generator
 // Variant of a Lehman Generator
-const lcg = (() => {
+class LCG {
 	// Set to values from http://en.wikipedia.org/wiki/Numerical_Recipes
 	// m is basically chosen to be large (as it is the max period)
 	// and for its relationships to a and c
-	const m = 4294967296;
+	private m = 4294967296;
 	// a - 1 should be divisible by m's prime factors
-	const a = 1664525;
+	private a = 1664525;
 	// c and m should be co-prime
-	const c = 1013904223;
-	let seed: number, z: number;
-	return {
-		setSeed(val: number) {
-			// pick a random seed if val is undefined or null
-			// the >>> 0 casts the seed to an unsigned 32-bit integer
-			z = seed = (val == null ? Math.random() * m : val) >>> 0;
-		},
-		getSeed() {
-			return seed;
-		},
-		rand() {
-			// define the recurrence relationship
-			z = (a * z + c) % m;
-			// return a float in [0, 1)
-			// if z = m then z / m = 0 therefore (z % m) / m < 1 always
-			return z / m;
-		}
-	};
-})();
+	private c = 1013904223;
+	private s = Math.random() * this.m >>> 0;
+	private z = 0;
+
+	set seed(val: number) {
+		// pick a random seed if val is undefined or null
+		// the >>> 0 casts the seed to an unsigned 32-bit integer
+		this.z = this.s = (val == null ? Math.random() * this.m : val) >>> 0;
+	}
+
+	get seed() {
+		return this.s;
+	}
+
+	random() {
+		// define the recurrence relationship
+		this.z = (this.a * this.z + this.c) % this.m;
+		// return a float in [0, 1)
+		// if z = m then z / m = 0 therefore (z % m) / m < 1 always
+		return this.z / this.m;
+	}
+}
 
 export class PerlinNoise {
 	private perlin: number[];
+	private lcg = new LCG();
 
 	constructor(seed: number) {
-		lcg.setSeed(seed);
+		this.lcg.seed = seed;
 		this.perlin = new Array(PERLIN_SIZE + 1);
 		for (let i = 0; i < PERLIN_SIZE + 1; i++) {
-			this.perlin[i] = lcg.rand();
+			this.perlin[i] = this.lcg.random();
 		}
 	}
 
