@@ -11,6 +11,7 @@ import { AlphaSpeed, options as as_options, type AlphaSpeedOptions } from './mut
 import { Circle } from './entities/circle';
 import { EndlessEdge, type EndlessEdgeOptions } from './mutators/endless-edges';
 import { Perlin, type PerlinOptions } from './mutators/perlin';
+import { QuadTree, BoundingBox } from './quad-tree';
 
 // TODO: Easter egg:
 // rörelse mellan flera olika browser fönster
@@ -33,6 +34,8 @@ export type EntityClusterOptions = {
 	palette: string[];
 	alpha: number;
 	trail: number;
+	quad_tree_capacity: number;
+	debug_quad_tree?: boolean;
 
 	mutators: MutatorVariant[];
 };
@@ -77,12 +80,19 @@ const mutator_map = {
 	[MutatorType.Perlin]: Perlin
 };
 
+const FPS_INTERVAL = 1000;
+
 export class EntityCluster {
 	raf: ReturnType<typeof requestAnimationFrame> | null = null;
 	entities: Entity[] = [];
 	mutators: Mutator[] = [];
 	trail: number;
 	debug = true;
+	fps = 0;
+	last_frame_time = performance.now();
+	quad_tree_capacity = 4;
+	qtree: QuadTree | null = null;
+	debug_quad_tree = false;
 
 	constructor(
 		private ctx: CanvasRenderingContext2D,
@@ -90,6 +100,8 @@ export class EntityCluster {
 	) {
 		this.trail = options.trail;
 		this.debug = options.debug;
+		this.quad_tree_capacity = options.quad_tree_capacity;
+		this.debug_quad_tree = !!options.debug_quad_tree;
 		this.setup(options);
 		this.raf = requestAnimationFrame(this.update.bind(this));
 	}
@@ -105,7 +117,13 @@ export class EntityCluster {
 			const position = Vector.random();
 			const acceleration = new Vector(0, 0);
 			const velocity = position.clone();
-			velocity.magnitude =  map_values(random_between(...options.velocity_magnitude), options.velocity_magnitude[0], options.velocity_magnitude[1], -options.velocity_magnitude[0], options.velocity_magnitude[1]);
+			velocity.magnitude = map_values(
+				random_between(...options.velocity_magnitude),
+				options.velocity_magnitude[0],
+				options.velocity_magnitude[1],
+				-options.velocity_magnitude[0],
+				options.velocity_magnitude[1]
+			);
 			position.magnitude = random_between(...options.position_magnitude);
 			velocity.rotate(Math.PI / 2);
 			const mass = random_between(...options.mass_range);
@@ -123,20 +141,28 @@ export class EntityCluster {
 		}
 	}
 
-	private update() {
+	private update(now: number) {
 		if (this.raf) {
 			cancelAnimationFrame(this.raf);
 		}
+		this.fps = FPS_INTERVAL / (now - this.last_frame_time);
+		this.last_frame_time = now;
 		this.raf = requestAnimationFrame(this.update.bind(this));
 
 		this.ctx.fillStyle = `rgba(0, 0, 0, ${this.trail})`;
 		this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
+		const bb = new BoundingBox(new Vector(0, 0), this.ctx.canvas.width, this.ctx.canvas.height);
+		this.qtree = new QuadTree(bb, this.quad_tree_capacity);
+		for (let entity_idx = 0; entity_idx < this.entities.length; entity_idx++) {
+			this.qtree.insert(this.entities[entity_idx]);
+		}
+
 		for (let entity_idx = 0; entity_idx < this.entities.length; entity_idx++) {
 			const entity = this.entities[entity_idx];
 			for (let mutator_idx = 0; mutator_idx < this.mutators.length; mutator_idx++) {
 				const mutator = this.mutators[mutator_idx];
-				mutator.update(entity, this.entities);
+				mutator.update(entity, this.qtree);
 				if (this.debug) {
 					mutator.debug();
 				}
@@ -151,6 +177,15 @@ export class EntityCluster {
 			const entity = this.entities[entity_idx];
 			entity.update();
 			entity.draw(this.ctx);
+		}
+
+		if (this.debug) {
+			this.ctx.clearRect(0, 0, 100, 40);
+			this.ctx.fillStyle = 'white';
+			this.ctx.fillText(`FPS: ${this.fps.toFixed(0)}`, 20, 20);
+		}
+		if (this.debug_quad_tree) {
+			this.qtree?.draw(this.ctx);
 		}
 	}
 
@@ -167,15 +202,17 @@ export class EntityCluster {
 export const options = {
 	default: {
 		debug: true,
-		amount: 20,
+		debug_quad_tree: false,
+		amount: 5,
 		velocity_magnitude: [0.1, 0.5],
-		position_magnitude: [100, 150],
+		position_magnitude: [100, 500],
 		mass_range: [100, 300],
 		drag: 0.01,
 		gravity: 0.05,
 		palette: ['#ffffff'],
 		alpha: 0.4,
 		trail: 1,
+		quad_tree_capacity: 4,
 		mutators: [
 			{
 				type: MutatorType.InvisibleGravitationalBody,
@@ -197,6 +234,11 @@ export const options = {
 			{
 				value: 'debug',
 				title: 'Debug',
+				controls: [{ type: 'checkbox' }]
+			},
+			{
+				value: 'debug_quad_tree',
+				title: 'Debug quad tree',
 				controls: [{ type: 'checkbox' }]
 			},
 			{
@@ -247,6 +289,11 @@ export const options = {
 				value: 'trail',
 				title: 'Trail',
 				controls: [{ type: 'range', min: 0, max: 1, step: 0.01 }]
+			},
+			{
+				value: 'quad_tree_capacity',
+				title: 'Quad tree capacity',
+				controls: [{ type: 'range', min: 1, max: 100 }]
 			}
 		]
 	}

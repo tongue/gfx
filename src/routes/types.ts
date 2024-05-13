@@ -1,4 +1,5 @@
 import type { Color } from './color';
+import type { QuadTree } from './quad-tree';
 import type { Vector } from './vector';
 
 export interface Entity {
@@ -13,7 +14,7 @@ export interface Entity {
 }
 
 export interface Mutator {
-	update(entity: Entity, all_entities: Entity[]): void;
+	update(entity: Entity, quad_tree: QuadTree): void;
 	debug(): void;
 	destroy(): void;
 }

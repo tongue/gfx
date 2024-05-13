@@ -1,6 +1,7 @@
 import type { Mutator, Entity } from '../types';
 import { Vector } from '../vector';
 import { clamp } from '../utils';
+import { BoundingBox, type QuadTree } from '../quad-tree';
 
 export type GravityOptions = {
 	gravity?: number;
@@ -25,7 +26,9 @@ export class Gravity implements Mutator {
 		b.acceleration.add(force_by_mass);
 	}
 
-	update(entity: Entity, all_entities: Entity[]) {
+	update(entity: Entity, quad_tree: QuadTree) {
+		const [, max_distance] = this.distance_range;
+		const all_entities = quad_tree.query(new BoundingBox(entity.position, max_distance, max_distance));
 		for (let i = 0; i < all_entities.length; i++) {
 			if (entity !== all_entities[i]) {
 				this.attract(entity, all_entities[i]);
@@ -44,7 +47,7 @@ export class Gravity implements Mutator {
 
 export const options = {
 	default: {
-		distance_range: [10_000, 20_000],
+		distance_range: [20, 100],
 		gravity: 0.05
 	},
 	config: {

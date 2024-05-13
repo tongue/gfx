@@ -30,7 +30,7 @@ export class InvisibleGravitationalBody implements Mutator {
 		this.mass = options.mass ?? 1;
 		this.gravity = options.gravity ?? 0.1;
 		this.distance_range = options.distance_range ?? [1, 100];
-		this.debug_color = new Color('#ff0000', 1);
+		this.debug_color = new Color('#ffffff', 0.1);
 	}
 
 	update(entity: Entity) {
@@ -61,7 +61,7 @@ export const options = {
 		position: [0.0, 0.0],
 		mass: 500,
 		gravity: 0.05,
-		distance_range: [10_000, 20_000]
+		distance_range: [10, 200]
 	},
 	config: {
 		title: 'Invisible gravitational body mutator',
