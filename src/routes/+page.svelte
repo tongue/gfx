@@ -18,12 +18,15 @@
 	let options: { [key: string]: any } = $state(deep_clone(cluster_options.default));
 	let dialog: HTMLDialogElement;
 
-	const mutator_options: { [key: string]: any } = {
+	const single_mutator_options: { [key: string]: any } = {
 		[MutatorType.Gravity]: g_options,
-		[MutatorType.InvisibleGravitationalBody]: igb_options,
 		[MutatorType.AlphaSpeed]: sa_options,
 		[MutatorType.EndlessEdge]: ee_options,
 		[MutatorType.Perlin]: p_options
+	};
+
+	const mutator_options: { [key: string]: any } = {
+		[MutatorType.InvisibleGravitationalBody]: igb_options,
 	};
 
 	function cluster(canvas: HTMLCanvasElement, options: any) {
@@ -72,6 +75,21 @@
 		return () => {
 			if (Array.isArray(options.mutators)) {
 				options.mutators.splice(idx, 1);
+			}
+		};
+	}
+
+	function add_single_mutator(event: Event) {
+		event.preventDefault();
+		const values = new FormData(event.target as HTMLFormElement);
+		const type = values.get('type') as MutatorType;
+		options.single_mutators.push({ type, options: deep_clone(single_mutator_options[type].default) });
+	}
+
+	function remove_single_mutator(idx: number) {
+		return () => {
+			if (Array.isArray(options.single_mutators)) {
+				options.single_mutators.splice(idx, 1);
 			}
 		};
 	}
@@ -131,6 +149,31 @@
 					<form onsubmit={add_mutator}>
 						<select name="type">
 							{#each Object.keys(mutator_options) as type}
+								<option value={type}>{type}</option>
+							{/each}
+						</select>
+						<button>Add mutator</button>
+					</form>
+				</fieldset>
+				<fieldset>
+					<legend>Single Mutators</legend>
+					{#each options.single_mutators as mutator, idx}
+						{#if mutator.type in single_mutator_options}
+							{@const mutator_cfg = single_mutator_options[mutator.type].config}
+							<details>
+								<summary>{mutator_cfg.title}</summary>
+								<div>
+									{#each mutator_cfg.configuration as { value, title, controls }}
+										<Option {title} {controls} bind:value={options.single_mutators[idx].options[value]} />
+									{/each}
+								</div>
+								<button onclick={remove_single_mutator(idx)}>Remove mutator</button>
+							</details>
+						{/if}
+					{/each}
+					<form onsubmit={add_single_mutator}>
+						<select name="type">
+							{#each Object.keys(single_mutator_options) as type}
 								<option value={type}>{type}</option>
 							{/each}
 						</select>

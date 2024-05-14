@@ -1,4 +1,4 @@
-import type { Mutator, Entity } from '../types';
+import type { SingleMutator, Entity } from '../types';
 import { clamp } from '../utils';
 
 export type AlphaSpeedOptions = {
@@ -6,7 +6,7 @@ export type AlphaSpeedOptions = {
 	multiplier?: number;
 };
 
-export class AlphaSpeed implements Mutator {
+export class AlphaSpeed implements SingleMutator {
 	private min: number;
 	private max: number;
 	private multiplier: number;

@@ -1,4 +1,4 @@
-import type { Entity, Mutator } from './types';
+import type { Entity, Mutator, SingleMutator } from './types';
 import { Vector } from './vector';
 import { map_values, random_between, random_item } from './utils';
 import { Gravity, options as g_options, type GravityOptions } from './mutators/gravity';
@@ -37,6 +37,7 @@ export type EntityClusterOptions = {
 	quad_tree_capacity: number;
 	debug_quad_tree?: boolean;
 
+	single_mutators: SingleMutatorVariant[];
 	mutators: MutatorVariant[];
 };
 
@@ -65,19 +66,23 @@ type PerlinNoiseMutator = {
 	options: PerlinOptions;
 };
 
-type MutatorVariant =
+type SingleMutatorVariant =
 	| GravityMutator
-	| InvisibleGravitationalBodyMutator
 	| AlphaSpeedMutator
 	| EndlessEdgeMutator
 	| PerlinNoiseMutator;
 
-const mutator_map = {
+type MutatorVariant = InvisibleGravitationalBodyMutator;
+
+const single_mutator_map = {
 	[MutatorType.Gravity]: Gravity,
-	[MutatorType.InvisibleGravitationalBody]: InvisibleGravitationalBody,
 	[MutatorType.AlphaSpeed]: AlphaSpeed,
 	[MutatorType.EndlessEdge]: EndlessEdge,
 	[MutatorType.Perlin]: Perlin
+};
+
+const mutator_map = {
+	[MutatorType.InvisibleGravitationalBody]: InvisibleGravitationalBody
 };
 
 const FPS_INTERVAL = 1000;
@@ -86,6 +91,7 @@ export class EntityCluster {
 	raf: ReturnType<typeof requestAnimationFrame> | null = null;
 	entities: Entity[] = [];
 	mutators: Mutator[] = [];
+	single_mutators: SingleMutator[] = [];
 	trail: number;
 	debug = true;
 	fps = 0;
@@ -111,6 +117,11 @@ export class EntityCluster {
 			const Mutator = mutator_map[mutator.type];
 			const opts = mutator.options;
 			this.mutators.push(new Mutator(opts as { [key: string]: unknown }, this.ctx));
+		}
+		for (const mutator of options.single_mutators) {
+			const Mutator = single_mutator_map[mutator.type];
+			const opts = mutator.options;
+			this.single_mutators.push(new Mutator(opts as { [key: string]: unknown }, this.ctx));
 		}
 
 		for (let i = 0; i < options.amount; i++) {
@@ -158,10 +169,18 @@ export class EntityCluster {
 			this.qtree.insert(this.entities[entity_idx]);
 		}
 
+		for (let mutator_idx = 0; mutator_idx < this.mutators.length; mutator_idx++) {
+			const mutator = this.mutators[mutator_idx];
+			mutator.update(this.qtree);
+			if (this.debug) {
+				mutator.debug();
+			}
+		}
+
 		for (let entity_idx = 0; entity_idx < this.entities.length; entity_idx++) {
 			const entity = this.entities[entity_idx];
-			for (let mutator_idx = 0; mutator_idx < this.mutators.length; mutator_idx++) {
-				const mutator = this.mutators[mutator_idx];
+			for (let mutator_idx = 0; mutator_idx < this.single_mutators.length; mutator_idx++) {
+				const mutator = this.single_mutators[mutator_idx];
 				mutator.update(entity, this.qtree);
 				if (this.debug) {
 					mutator.debug();
@@ -193,7 +212,7 @@ export class EntityCluster {
 		if (this.raf) {
 			cancelAnimationFrame(this.raf);
 		}
-		for (const mutator of this.mutators) {
+		for (const mutator of this.single_mutators) {
 			mutator.destroy();
 		}
 	}
@@ -217,7 +236,9 @@ export const options = {
 			{
 				type: MutatorType.InvisibleGravitationalBody,
 				options: { ...igb_options.default }
-			},
+			}
+		],
+		single_mutators: [
 			{
 				type: MutatorType.Gravity,
 				options: { ...g_options.default }

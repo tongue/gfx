@@ -1,7 +1,8 @@
-import type { Mutator, Entity } from '../types';
+import type { Mutator } from '../types';
 import { Vector } from '../vector';
 import { clamp } from '../utils';
 import { Color } from '../color';
+import { BoundingBox, type QuadTree } from '../quad-tree';
 
 export type InvisibleGravitationalBodyOptions = {
 	position?: [number, number];
@@ -17,12 +18,13 @@ export class InvisibleGravitationalBody implements Mutator {
 	private gravity: number;
 	private distance_range: [number, number];
 	private debug_color: Color;
+	private boundry: BoundingBox;
 
-	constructor(options: InvisibleGravitationalBodyOptions, ctx: CanvasRenderingContext2D, ) {
+	constructor(options: InvisibleGravitationalBodyOptions, ctx: CanvasRenderingContext2D) {
 		this.ctx = ctx;
 		if (options.position) {
-			const x = options.position[0] * ctx.canvas.width / 2;
-			const y = options.position[1] * ctx.canvas.height / 2;
+			const x = (options.position[0] * ctx.canvas.width) / 2;
+			const y = (options.position[1] * ctx.canvas.height) / 2;
 			this.position = new Vector(x, y);
 		} else {
 			this.position = new Vector(0, 0);
@@ -30,16 +32,21 @@ export class InvisibleGravitationalBody implements Mutator {
 		this.mass = options.mass ?? 1;
 		this.gravity = options.gravity ?? 0.1;
 		this.distance_range = options.distance_range ?? [1, 100];
-		this.debug_color = new Color('#ffffff', 0.1);
+		this.debug_color = new Color('#ffffff', 0.3);
+		this.boundry = new BoundingBox(this.position, this.distance_range[1], this.distance_range[1]);
 	}
 
-	update(entity: Entity) {
-		const force = Vector.subtract(this.position, entity.position);
-		const distance_squared = clamp(force.magnitude_squared, ...this.distance_range);
-		const strength = (this.gravity * (this.mass * entity.mass)) / distance_squared;
-		force.magnitude = strength;
-		const force_by_mass = Vector.divide(force, entity.mass);
-		entity.acceleration.add(force_by_mass);
+	update(quad_tree: QuadTree) {
+		const all_entities = quad_tree.query(this.boundry);
+		for (let i = 0; i < all_entities.length; i++) {
+			const entity = all_entities[i];
+			const force = Vector.subtract(this.position, entity.position);
+			const distance_squared = clamp(force.magnitude_squared, ...this.distance_range);
+			const strength = (this.gravity * (this.mass * entity.mass)) / distance_squared;
+			force.magnitude = strength;
+			const force_by_mass = Vector.divide(force, entity.mass);
+			entity.acceleration.add(force_by_mass);
+		}
 	}
 
 	debug() {
@@ -49,6 +56,7 @@ export class InvisibleGravitationalBody implements Mutator {
 		this.ctx.strokeStyle = this.debug_color.to_string();
 		this.ctx.arc(x_from_center, y_from_center, Math.sqrt(this.mass), 0, Math.PI * 2);
 		this.ctx.stroke();
+		this.boundry.draw(this.ctx);
 	}
 
 	destroy() {
@@ -95,4 +103,3 @@ export const options = {
 		]
 	}
 };
-

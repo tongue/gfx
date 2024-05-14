@@ -1,5 +1,5 @@
 import { PerlinNoise } from '../p';
-import type { Mutator, Entity } from '../types';
+import type { SingleMutator, Entity } from '../types';
 import { map_values } from '../utils';
 import { Vector } from '../vector';
 
@@ -9,7 +9,7 @@ export type PerlinOptions = {
 	seed?: number;
 };
 
-export class Perlin implements Mutator {
+export class Perlin implements SingleMutator {
 	level: number;
 	scale: number;
 	perlin: PerlinNoise;

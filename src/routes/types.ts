@@ -13,8 +13,14 @@ export interface Entity {
 	draw(ctx: CanvasRenderingContext2D): void;
 }
 
-export interface Mutator {
+export interface SingleMutator {
 	update(entity: Entity, quad_tree: QuadTree): void;
+	debug(): void;
+	destroy(): void;
+}
+
+export interface Mutator {
+	update(quad_tree: QuadTree): void;
 	debug(): void;
 	destroy(): void;
 }

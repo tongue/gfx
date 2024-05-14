@@ -1,10 +1,10 @@
-import type { Mutator, Entity } from '../types';
+import type { SingleMutator, Entity } from '../types';
 
 export type EndlessEdgeOptions = {
 	active?: boolean;
 };
 
-export class EndlessEdge implements Mutator {
+export class EndlessEdge implements SingleMutator {
 	private active: boolean;
 
 	constructor(

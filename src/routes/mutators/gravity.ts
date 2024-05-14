@@ -1,4 +1,4 @@
-import type { Mutator, Entity } from '../types';
+import type { SingleMutator, Entity } from '../types';
 import { Vector } from '../vector';
 import { clamp } from '../utils';
 import { BoundingBox, type QuadTree } from '../quad-tree';
@@ -8,7 +8,7 @@ export type GravityOptions = {
 	distance_range?: [number, number];
 };
 
-export class Gravity implements Mutator {
+export class Gravity implements SingleMutator {
 	private distance_range: [number, number];
 	private gravity: number;
 
